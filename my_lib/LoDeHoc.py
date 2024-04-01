@@ -1,3 +1,7 @@
+import random
+from .XuLyTaiKhoan import *
+from datetime import datetime
+
 def quay_so():
     danh_sach_giai = {}
 
@@ -11,21 +15,12 @@ def quay_so():
 
     return danh_sach_giai
 
-
 def in_danh_sach_giai(danh_sach_giai):
     print('-' * 20)
     print("---DANH SÁCH GIẢI---")
     for giai, so in danh_sach_giai.items():
         print(f"{giai}: {so}")
     print('-' * 20)
-
-def nhap_so_lo():
-    while True:
-        so_lo = input("Nhập số lô mà bạn muốn cược (10-99): ")
-        if so_lo.isdigit() and 10 <= int(so_lo) <= 99:
-            return int(so_lo)
-        else:
-            print("Nhập sai định dạng, vui lòng nhập lại!")
 
 def nhap_so_lo():
     while True:
@@ -42,8 +37,8 @@ def nhap_so_lo():
 
         if so_lo_hop_le:
             return danh_sach_so_lo
-
-def nhap_tien_cuoc():
+def nhap_tien_cuoc(username):
+    tong_tien = int(lay_thong_tin_tai_khoan(username)[2])
     while True:
         tien_cuoc = input("Nhập tiền cược mà bạn muốn cược (tiền cược < tổng tiền bạn có): ")
         if tien_cuoc.isdigit() and int(tien_cuoc) < tong_tien:
@@ -51,29 +46,59 @@ def nhap_tien_cuoc():
         else:
             print("Nhập sai định dạng hoặc quá tổng tiền. Nhập lại")
 
-def game_quay_so(danh_sach_so_lo, tien_cuoc):
-    global tong_tien
+
+def cap_nhat_tien_choi_lo(username, tong_tien):
+    try:
+        du_lieu_tai_khoan = doc_file(PATH_DATA_TAI_KHOAN, "r")
+        if du_lieu_tai_khoan:
+            for i, tai_khoan in enumerate(du_lieu_tai_khoan):
+                if tai_khoan[0] == username:
+                    du_lieu_tai_khoan[i][2] = str(tong_tien)  # Cập nhật số tiền
+                    ghi_file([','.join(tai_khoan) + '\n' for tai_khoan in du_lieu_tai_khoan], PATH_DATA_TAI_KHOAN, "w")
+                    return
+    except Exception as e:
+        print(f"Có lỗi xảy ra khi cập nhật thông tin tài khoản: {e}")
+
+
+def luu_thong_tin_choi_lo(username, danh_sach_so_lo, tien_cuoc, danh_sach_giai,  tien_thang, tien_thua):
+    try:
+        thoi_gian_choi = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        thong_tin = f"{thoi_gian_choi},{username},{','.join(danh_sach_so_lo)},{tien_cuoc}," \
+                    f"{','.join(danh_sach_giai.values())},{tien_thang},{tien_thua}\n"
+        
+        ghi_file(thong_tin, PATH_DATA_CHOI_LO, "a")
+        print("Thông tin về lần chơi lô đã được lưu.")
+        
+        # Cập nhật số tiền thắng/thua vào tài khoản
+
+    except Exception as e:
+        print(f"Có lỗi xảy ra khi lưu thông tin: {e}")
+
+def game_quay_so(username, danh_sach_so_lo, tien_cuoc):
+    tong_tien = int(lay_thong_tin_tai_khoan(username)[2])
 
     danh_sach_giai = quay_so()
     
     in_danh_sach_giai(danh_sach_giai)
-    dem_so_lo = 0
+    dem_so_lo_trung = 0
     so_lo_trung = []  # Danh sách lưu trữ số lô trúng
 
     print("Các số lô bạn chơi là:", danh_sach_so_lo)
     for giai, so_giai in danh_sach_giai.items():
         for so_lo in danh_sach_so_lo:
             if so_lo == so_giai[-2:]:
-                dem_so_lo += 1
+                dem_so_lo_trung += 1
                 so_lo_trung.append(so_lo)
+    tien_thang = 0  # Khởi tạo tien_thang
+    tien_thua = 0   # Khởi tạo tien_thua
 
-    if dem_so_lo > 0:
-        tien_thang = tien_cuoc * dem_so_lo * 70
-        tien_thua = tien_cuoc * (len(danh_sach_so_lo) - len(so_lo_trung))
+    if dem_so_lo_trung > 0:
+        tien_thang = tien_cuoc * dem_so_lo_trung * 70
+        tien_thua = tien_cuoc * (len(danh_sach_so_lo) - dem_so_lo_trung)
 
         tong_tien += tien_thang - tien_thua
 
-        print(f"Bạn đã trúng {dem_so_lo} nháy!")
+        print(f"Bạn đã trúng {dem_so_lo_trung} nháy!")
         print("Các số lô trúng:", ", ".join(so_lo_trung))
         print(f"Số tiền bạn trúng là {tien_thang}")
         print(f"Số tiền bạn thua là {tien_thua}")
@@ -86,31 +111,7 @@ def game_quay_so(danh_sach_so_lo, tien_cuoc):
         print(f"Số tiền bạn thua là {tien_thua}")
         print(f"Tổng tiền bạn còn là {tong_tien}")
 
-def nap_tien():
-    global tong_tien
-    while True:
-        tien_nap = int(input("Nhập số tiền mà bạn muốn nạp: "))
-        tong_tien += tien_nap
-        print(f"Tổng tiền sau khi bạn nạp là {tong_tien}")
-        nap_tiep = int(input("Bạn có muốn nạp tiếp không? (0: không, 1: có)"))
-        if nap_tiep == 0:
-            break
-        else:
-            continue
+    # Lưu thông tin về lần chơi lô vào file
+    luu_thong_tin_choi_lo(username, danh_sach_so_lo, tien_cuoc, danh_sach_giai, tien_thang, tien_thua)
+    cap_nhat_tien_choi_lo(username, tong_tien)
 
-def dang_nhap():
-    global dang_nhap_status
-    print("---GAME LÔ ĐỀ HỌC---")
-    print("Vui lòng đăng nhập để chơi game")
-    
-    while True:
-        username = input("Nhập username: ")
-        password = input("Nhập password: ")
-
-        if username == "admin" and password == "admin":
-            dang_nhap_status = True
-            break
-        else:
-            print("Sai tên người dùng hoặc mật khẩu, vui lòng thử lại.")
-    clear_output()
-    menu()
