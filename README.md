@@ -1,6 +1,7 @@
 # Game Lô Đề Học ProMax
 
 Các tính năng
+
 **Chức năng đăng nhập:**
 - Nếu là tài khoản admin sẽ có menu riêng gồm quản lý tài khoản, nạp tiền tài khoản, thống kê và đăng xuất. 
 - Nếu là tài khoản thường thì hiển thị menu thường gồm: chơi lô, đổi mật khẩu, thống kê và đăng xuất.
